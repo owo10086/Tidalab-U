@@ -1,49 +1,23 @@
 name: Electron Build
-
 on: [push]
-
 jobs:
-
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v2
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v2
       with:
-        node-version: '20'
-
-    - name: Install Wine (Windows)
-      if: matrix.os == 'windows-latest'
+        node-version: '19'
+    - name: Install Wine and dependencies
       run: |
-        choco install wine wixtoolset --no-progress
-
-    - name: Install dependencies (Windows)
-      if: matrix.os == 'windows-latest'
+        sudo dpkg --add-architecture i386
+        sudo apt update
+        sudo apt install wine32
+    - name: Install dependencies
       run: |
+        npm install electron-builder -g
         npm install
-        npm install electron-wix-msi --save-dev
-
-    - name: Install Xcode (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        xcode-select --install
-
-    - name: Install dependencies (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        npm install
-        npm install electron-builder@23.6.0 --save-dev
-
-    - name: Build Electron app
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm run build:win
-        npm run build:mac
+    - name: Execute build.sh
+      run: bash build.sh
