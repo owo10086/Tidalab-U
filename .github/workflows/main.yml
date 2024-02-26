@@ -3,11 +3,12 @@ name: Electron Build
 on: [push]
 
 jobs:
+
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
     - name: Checkout code
@@ -18,19 +19,22 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Install dependencies (Linux and Windows)
-      if: matrix.os != 'macos-latest'
+    - name: Install Wine (Windows)
+      if: matrix.os == 'windows-latest'
       run: |
-        npm install
-
-    - name: Install dependencies (macOS)
+        choco install wine --no-progress
+    
+    - name: Install Xcode (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        npm install --build-from-source
+        xcode-select --install
+
+    - name: Install dependencies
+      run: npm install
 
     - name: Build Electron app
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        npm run build
-        npm run package
+        npm run build:win
+        npm run build:mac
