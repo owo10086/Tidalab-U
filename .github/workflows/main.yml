@@ -4,7 +4,10 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: Checkout code
@@ -13,17 +16,21 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        using: 'node20'
+        node-version: '20'
 
-    - name: Install Wine and dependencies
+    - name: Install dependencies (Linux and Windows)
+      if: matrix.os != 'macos-latest'
       run: |
-        sudo dpkg --add-architecture i386
-        sudo apt update
-        sudo apt install wine32
+        npm install
 
-    - name: Install dependencies
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
       run: |
-        npm install electron-builder -g
+        npm install --build-from-source
 
-    - name: Execute build.sh
-      run: bash build.sh
+    - name: Build Electron app
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        npm run build
+        npm run package
