@@ -17,7 +17,7 @@ jobs:
 
     - name: Install Wine and dependencies
       run: |
-        sudo dpkg --add-architecture i386
+        sudo dpkg --add-architecture
         sudo apt update
         sudo apt install wine32
 
