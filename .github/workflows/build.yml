@@ -26,6 +26,11 @@ jobs:
       run: |
         sudo apt-get install xvfb
 
+    - name: Change working directory
+      run: |
+        cd ${{ github.workspace }}
+        pwd
+
     - name: Install dependencies
       run: |
         npm install
