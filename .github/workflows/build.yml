@@ -1,71 +1,51 @@
-name: build
- 
-# 当提交tag时触发
+name: Build Electron App
+
 on:
   push:
-    tags:
-      - "*"
-  workflow_dispatch:
- 
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   build:
- 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
- 
+        node-version: [16.x]
+
     steps:
-    # 步骤1，检出仓库代码
-    - name: Check out Git repository
-      uses: actions/checkout@v3
-    - name: Change directory
-      run: cd src
-    # 步骤2，使用node环境
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20
-        cache: 'npm'
-        cache-dependency-path: 'src/package-lock.json'
-    # 步骤3，执行npm install命令，安装依赖
-    - name: Install dependencies
-      run: cd src && npm install
-    - name: Debug electron-builder
-      run: |
-        echo "Starting electron-builder debug..."
-        cd src
-        npm install electron-builder --save-dev
-        npm install electron --save-dev
-        npm install
-        export ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES=true
-        export DEBUG=electron-builder
-    
-        if [ ${{ matrix.os }} == 'ubuntu-latest' ]; then
-          target=linux npx electron-builder build --linux
-        elif [ ${{ matrix.os }} == 'macos-latest' ]; then
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      # 直接在 build.yml 文件里运行打包命令
+      - name: Build Electron App for macOS (arm64)
+        run: |
+          cd src
           target=darwin npx electron-builder build --macos --arm64
+
+      - name: Build Electron App for macOS (x64)
+        run: |
+          cd src
           target=darwin npx electron-builder build --macos --x64
-        elif [ ${{ matrix.os }} == 'windows-latest' ]; then
+
+      - name: Build Electron App for Windows (x64)
+        run: |
+          cd src
           target=win32 npx electron-builder build --win --x64
-        fi
-      env:
-        ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        DEBUG: electron-builder
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: electron-builds-${{ matrix.os }}
-        path: dist
-    # 步骤5，发布release，需要注意包含的3个文件
-    - name: release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-         dist/*.exe
-         dist/*.exe.blockmap
-         dist/latest.yml
-         draft: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: electron-build
+          path: dist/
